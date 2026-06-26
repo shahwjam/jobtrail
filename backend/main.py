@@ -1,21 +1,13 @@
 from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
 
 import models
+import schemas
 from database import engine, get_db
 
-# Create tables from your models if they don't exist yet.
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="JobTrail API")
-
-
-class ApplicationCreate(BaseModel):
-    company: str
-    position: str
-    status: str = "Applied"
-    job_description: str | None = None
 
 
 @app.get("/")
@@ -23,8 +15,8 @@ def read_root():
     return {"status": "ok", "service": "JobTrail API"}
 
 
-@app.post("/applications", status_code=201)
-def create_application(application: ApplicationCreate, db: Session = Depends(get_db)):
+@app.post("/applications", response_model=schemas.ApplicationResponse, status_code=201)
+def create_application(application: schemas.ApplicationCreate, db: Session = Depends(get_db)):
     new_application = models.Application(**application.model_dump())
     db.add(new_application)
     db.commit()
@@ -32,6 +24,6 @@ def create_application(application: ApplicationCreate, db: Session = Depends(get
     return new_application
 
 
-@app.get("/applications")
+@app.get("/applications", response_model=list[schemas.ApplicationResponse])
 def get_applications(db: Session = Depends(get_db)):
     return db.query(models.Application).all()
