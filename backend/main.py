@@ -1,15 +1,16 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
+from sqlalchemy.orm import Session
 from pydantic import BaseModel
+
+import models
+from database import engine, get_db
+
+# Create tables from your models if they don't exist yet.
+models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="JobTrail API")
 
-# --- Temporary in-memory store (replaced by PostgreSQL in TASK-007) ---
-applications = []
-next_id = 1
 
-
-# --- Minimal request model: the shape of data we accept on create.
-#     You'll build this out into full validation schemas in TASK-008. ---
 class ApplicationCreate(BaseModel):
     company: str
     position: str
@@ -23,20 +24,14 @@ def read_root():
 
 
 @app.post("/applications", status_code=201)
-def create_application(application: ApplicationCreate):
-    global next_id
-    new_application = {
-        "id": next_id,
-        "company": application.company,
-        "position": application.position,
-        "status": application.status,
-        "job_description": application.job_description,
-    }
-    applications.append(new_application)
-    next_id += 1
+def create_application(application: ApplicationCreate, db: Session = Depends(get_db)):
+    new_application = models.Application(**application.model_dump())
+    db.add(new_application)
+    db.commit()
+    db.refresh(new_application)
     return new_application
 
 
 @app.get("/applications")
-def get_applications():
-    return applications
+def get_applications(db: Session = Depends(get_db)):
+    return db.query(models.Application).all()
