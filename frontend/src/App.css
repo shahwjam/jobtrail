@@ -49,6 +49,44 @@
   color: #1a1a2e;
 }
 
+/* Shown while the initial GET /applications is in flight */
+.status-message {
+  color: #6b7280;
+  padding: 1rem 0;
+}
+
+/* A load or save failure — same shape either way, just different copy */
+.error-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.error-banner p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+/* Fallback UI when the error boundary catches a render crash */
+.error-boundary {
+  max-width: 800px;
+  margin: 4rem auto;
+  padding: 2rem;
+  text-align: center;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.error-boundary h2 {
+  color: #b91c1c;
+}
+
 /* The create/edit application form */
 .application-form {
   border: 1px solid #e5e7eb;
