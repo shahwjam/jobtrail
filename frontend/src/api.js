@@ -25,3 +25,12 @@ export async function createApplication(application) {
   });
   return handleResponse(response);
 }
+
+export async function updateApplication(id, application) {
+  const response = await fetch(`${API_BASE_URL}/applications/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(application),
+  });
+  return handleResponse(response);
+}
