@@ -1,11 +1,5 @@
-import { useState } from "react";
-
-
-const SAMPLE_APPLICATIONS = [
-  { id: 1, company: "Acme Corp", position: "Backend Engineer", status: "Applied" },
-  { id: 2, company: "Globex", position: "Frontend Developer", status: "Interview" },
-  { id: 3, company: "Initech", position: "Full Stack Engineer", status: "Offer" },
-];
+import { useEffect, useState } from "react";
+import { getApplications } from "./api";
 
 
 function ApplicationCard({ application }) {
@@ -22,10 +16,18 @@ function ApplicationCard({ application }) {
 
 function App() {
   // useState gives us: the current value (applications) and a
-  // function to change it (setApplications). We start it with our
-  // placeholder data. When this state changes later, React
+  // function to change it (setApplications). We start empty and fill it
+  // in once the backend responds. When this state changes later, React
   // automatically re-renders the screen.
-  const [applications, setApplications] = useState(SAMPLE_APPLICATIONS);
+  const [applications, setApplications] = useState([]);
+
+  // useEffect with an empty dependency array ([]) runs once, right after
+  // the component first mounts — a good place to kick off a data fetch.
+  useEffect(() => {
+    getApplications()
+      .then(setApplications)
+      .catch((error) => console.error("Failed to load applications:", error));
+  }, []);
 
   return (
     <div className="dashboard">
