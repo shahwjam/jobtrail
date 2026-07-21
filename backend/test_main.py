@@ -43,3 +43,28 @@ def test_empty_company_rejected(client):
     payload = {"company": "", "position": "SWE"}
     response = client.post("/applications", json=payload)
     assert response.status_code == 422   # min_length=1 constraint
+
+
+def test_update_application(client):
+    created = client.post("/applications", json={"company": "Acme Corp", "position": "Backend Engineer"})
+    application_id = created.json()["id"]
+
+    response = client.patch(f"/applications/{application_id}", json={"status": "Interview"})
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "Interview"
+    assert data["company"] == "Acme Corp"   # untouched fields stay as they were
+
+
+def test_update_application_not_found(client):
+    response = client.patch("/applications/999", json={"status": "Interview"})
+    assert response.status_code == 404
+
+
+def test_update_invalid_status_rejected(client):
+    created = client.post("/applications", json={"company": "Acme Corp", "position": "Backend Engineer"})
+    application_id = created.json()["id"]
+
+    response = client.patch(f"/applications/{application_id}", json={"status": "no"})
+    assert response.status_code == 422

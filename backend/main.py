@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
@@ -36,3 +36,18 @@ def create_application(application: schemas.ApplicationCreate, db: Session = Dep
 @app.get("/applications", response_model=list[schemas.ApplicationResponse])
 def get_applications(db: Session = Depends(get_db)):
     return db.query(models.Application).all()
+
+
+@app.patch("/applications/{application_id}", response_model=schemas.ApplicationResponse)
+def update_application(application_id: int, application: schemas.ApplicationUpdate, db: Session = Depends(get_db)):
+    existing = db.query(models.Application).filter(models.Application.id == application_id).first()
+    if existing is None:
+        raise HTTPException(status_code=404, detail="Application not found")
+
+    # exclude_unset means only fields the client actually sent get overwritten
+    for field, value in application.model_dump(exclude_unset=True).items():
+        setattr(existing, field, value)
+
+    db.commit()
+    db.refresh(existing)
+    return existing

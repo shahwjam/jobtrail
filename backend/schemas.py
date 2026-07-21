@@ -19,6 +19,15 @@ class ApplicationCreate(BaseModel):
     job_description: str | None = None
 
 
+# What a client may SEND when editing an application — every field is
+# optional so a client can PATCH just the one field that changed
+class ApplicationUpdate(BaseModel):
+    company: str | None = Field(default=None, min_length=1, max_length=200)
+    position: str | None = Field(default=None, min_length=1, max_length=200)
+    status: ApplicationStatus | None = None
+    job_description: str | None = None
+
+
 # What the API SENDS BACK — defines exactly which fields go out
 class ApplicationResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
