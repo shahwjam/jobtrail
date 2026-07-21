@@ -9,12 +9,25 @@ function ApplicationCard({ application, onEdit }) {
     <div className="card">
       <h3>{application.company}</h3>
       <p>{application.position}</p>
-      <span className="status">{application.status}</span>
       <button type="button" className="card-edit" onClick={() => onEdit(application)}>
         Edit
       </button>
     </div>
   );
+}
+
+// The pipeline stages, left to right — Rejected sits at the end since it's
+// a dead end rather than a step forward.
+const PIPELINE_STATUSES = ["Applied", "Interview", "Offer", "Rejected"];
+
+// Buckets applications by status so each pipeline column can render just
+// its own cards.
+function groupByStatus(applications) {
+  const groups = Object.fromEntries(PIPELINE_STATUSES.map((status) => [status, []]));
+  for (const application of applications) {
+    groups[application.status]?.push(application);
+  }
+  return groups;
 }
 
 // === The dashboard page ===
@@ -53,6 +66,8 @@ function App() {
     setFormTarget(null);
   }
 
+  const groupedApplications = groupByStatus(applications);
+
   return (
     <div className="dashboard">
       <div className="dashboard-header">
@@ -73,12 +88,19 @@ function App() {
         />
       )}
 
-      <div className="card-list">
-        {/* Take the array and turn EACH application into a card.
-            .map() is how React renders lists. The "key" helps React
-            track each item — always give it a unique id. */}
-        {applications.map((application) => (
-          <ApplicationCard key={application.id} application={application} onEdit={setFormTarget} />
+      <div className="pipeline">
+        {/* One column per status — editing an application's status (via
+            the form above) moves its card into a different column. */}
+        {PIPELINE_STATUSES.map((status) => (
+          <div key={status} className="pipeline-column">
+            <div className="pipeline-column-header" data-status={status}>
+              <h2>{status}</h2>
+              <span className="pipeline-count">{groupedApplications[status].length}</span>
+            </div>
+            {groupedApplications[status].map((application) => (
+              <ApplicationCard key={application.id} application={application} onEdit={setFormTarget} />
+            ))}
+          </div>
         ))}
       </div>
     </div>
