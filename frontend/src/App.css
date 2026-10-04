@@ -258,6 +258,8 @@
   padding: 1.25rem;
   margin-bottom: 1.5rem;
   background: #fafaff;
+  /* index.css centers #root's text; long-form AI output reads better left-aligned */
+  text-align: left;
   display: flex;
   flex-direction: column;
   gap: 0.9rem;
