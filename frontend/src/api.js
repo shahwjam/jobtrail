@@ -48,6 +48,6 @@ export async function updateApplication(id, application) {
   return handleResponse(response);
 }
 
-export async function generateCoverLetter(id, resumeText) {
-  return postJson(`/applications/${id}/cover-letter`, { resume_text: resumeText });
+export async function generateCoverLetter(id, resumeText, tone) {
+  return postJson(`/applications/${id}/cover-letter`, { resume_text: resumeText, tone });
 }
