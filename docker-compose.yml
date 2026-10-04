@@ -1,0 +1,60 @@
+# Runs the whole JobTrail stack locally with one command:
+#
+#   cp .env.example .env        # then add your ANTHROPIC_API_KEY
+#   docker compose up --build
+#
+#   Frontend → http://localhost:8080
+#   API      → http://localhost:8000  (docs at /docs)
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: jobtrail
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-jobtrail}
+      POSTGRES_DB: jobtrail
+    volumes:
+      # Named volume: your data survives `docker compose down`
+      # (use `docker compose down -v` to wipe it).
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      # The API only starts once Postgres actually accepts connections,
+      # not merely once the container has started.
+      test: ["CMD-SHELL", "pg_isready -U jobtrail -d jobtrail"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    environment:
+      # Inside the compose network, services reach each other by service
+      # name — "db" here, not localhost.
+      DATABASE_URL: postgresql+psycopg2://jobtrail:${POSTGRES_PASSWORD:-jobtrail}@db:5432/jobtrail
+      CORS_ORIGINS: http://localhost:8080
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-sonnet-5-5}
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # The BROWSER calls the API, and the browser runs on your machine,
+        # not inside the compose network — so this is localhost, not "backend".
+        VITE_API_URL: http://localhost:8000
+    ports:
+      - "8080:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  pgdata:
