@@ -227,3 +227,86 @@
   font-weight: 600;
   cursor: pointer;
 }
+.card-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.75rem;
+}
+
+.card-actions .card-edit {
+  margin-top: 0;
+}
+
+.form-field textarea {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 0.5rem 0.65rem;
+  font-size: 0.9rem;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.button-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* The AI tools panel for one application */
+.ai-panel {
+  border: 1px solid #e0e7ff;
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  background: #fafaff;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.ai-panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.ai-panel-header h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  color: #1a1a2e;
+}
+
+.ai-panel-header .subtitle {
+  margin: 0.2rem 0 0;
+}
+
+.ai-hint {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.82rem;
+}
+
+.ai-result {
+  border-top: 1px solid #e5e7eb;
+  padding-top: 0.9rem;
+}
+
+.ai-result-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ai-result h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: #1a1a2e;
+}
+
+/* Keep Claude's paragraph breaks */
+.cover-letter {
+  white-space: pre-wrap;
+  line-height: 1.55;
+  color: #1f2937;
+  font-size: 0.92rem;
+}

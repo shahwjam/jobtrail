@@ -1,22 +1,36 @@
+from contextlib import asynccontextmanager
+
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
+import ai
+import config
 import models
 import schemas
 from database import engine, get_db
 
-models.Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="JobTrail API")
+# Create tables on startup rather than at import time — importing main.py
+# (as the tests do) no longer needs a live Postgres server.
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    models.Base.metadata.create_all(bind=engine)
+    yield
 
-# Lets the Vite dev server (a different origin) call this API from the browser.
+
+app = FastAPI(title="JobTrail API", lifespan=lifespan)
+
+# Lets the frontend (a different origin) call this API from the browser.
+# Origins come from the CORS_ORIGINS env var so production can add its URL.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=config.CORS_ORIGINS,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(ai.router)
 
 
 @app.get("/")

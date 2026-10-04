@@ -2,12 +2,18 @@ import { useState } from "react";
 
 const STATUS_OPTIONS = ["Applied", "Interview", "Offer", "Rejected"];
 
-const EMPTY_VALUES = { company: "", position: "", status: "Applied" };
+const EMPTY_VALUES = { company: "", position: "", status: "Applied", job_description: "" };
 
 // One form, two jobs: pass no initialValues to create a new application,
 // or pass an existing application to edit it in place.
 function ApplicationForm({ initialValues, onSubmit, onCancel }) {
-  const [values, setValues] = useState(initialValues ?? EMPTY_VALUES);
+  // The API returns job_description: null when it was never set — swap
+  // that for "" so the textarea is always a controlled input.
+  const [values, setValues] = useState(() => ({
+    ...EMPTY_VALUES,
+    ...initialValues,
+    job_description: initialValues?.job_description ?? "",
+  }));
   const [errors, setErrors] = useState({});
 
   function handleChange(event) {
@@ -31,7 +37,14 @@ function ApplicationForm({ initialValues, onSubmit, onCancel }) {
     setErrors(validationErrors);
     if (Object.keys(validationErrors).length > 0) return;
 
-    onSubmit(values);
+    // Only send what the API accepts (not id / created_at), and store a
+    // blank description as null rather than an empty string.
+    onSubmit({
+      company: values.company,
+      position: values.position,
+      status: values.status,
+      job_description: values.job_description.trim() || null,
+    });
   }
 
   return (
@@ -57,6 +70,18 @@ function ApplicationForm({ initialValues, onSubmit, onCancel }) {
             </option>
           ))}
         </select>
+      </div>
+
+      <div className="form-field">
+        <label htmlFor="job_description">Job description</label>
+        <textarea
+          id="job_description"
+          name="job_description"
+          rows={6}
+          placeholder="Paste the posting here — the AI tools use it to tailor cover letters and match scores."
+          value={values.job_description}
+          onChange={handleChange}
+        />
       </div>
 
       <div className="form-actions">
