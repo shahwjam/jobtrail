@@ -26,3 +26,9 @@ CORS_ORIGINS = [
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-5-5")
 AI_MAX_TOKENS = int(os.getenv("AI_MAX_TOKENS", "1024"))
+
+# Protects the Claude bill. Only real API calls count — cache hits are free.
+AI_RATE_LIMIT = int(os.getenv("AI_RATE_LIMIT", "10"))  # per client...
+AI_RATE_LIMIT_WINDOW_SECONDS = int(os.getenv("AI_RATE_LIMIT_WINDOW_SECONDS", "3600"))  # ...per hour
+AI_DAILY_LIMIT = int(os.getenv("AI_DAILY_LIMIT", "200"))  # across all clients, per 24h
+AI_CACHE_TTL_HOURS = int(os.getenv("AI_CACHE_TTL_HOURS", "168"))  # one week

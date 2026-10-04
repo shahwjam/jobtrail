@@ -60,6 +60,7 @@ class CoverLetterRequest(BaseModel):
 class CoverLetterResponse(BaseModel):
     application_id: int
     cover_letter: str
+    cached: bool = False  # True when served from the DB cache, no API call made
 
 
 class MatchScoreRequest(BaseModel):
@@ -80,3 +81,4 @@ class MatchScoreResponse(MatchResult):
 
     application_id: int
     updated_at: datetime | None = None
+    cached: bool = False

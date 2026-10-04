@@ -10,7 +10,11 @@ const API_BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 async function handleResponse(response) {
   if (!response.ok) {
     const body = await response.json().catch(() => null);
-    throw new Error(body?.detail ? JSON.stringify(body.detail) : `Request failed: ${response.status}`);
+    // FastAPI sends a plain string for our own errors (404, 429...) and a
+    // list of field errors for 422 validation failures.
+    const detail = body?.detail;
+    const message = typeof detail === "string" ? detail : detail ? JSON.stringify(detail) : null;
+    throw new Error(message ?? `Request failed: ${response.status}`);
   }
   return response.json();
 }

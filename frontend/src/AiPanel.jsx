@@ -51,7 +51,7 @@ function KeywordList({ title, keywords, variant }) {
 function AiPanel({ application, onClose, onMatchScored }) {
   const [resumeText, setResumeText] = useState(loadSavedResume);
   const [tone, setTone] = useState("professional");
-  const [coverLetter, setCoverLetter] = useState(null);
+  const [coverLetter, setCoverLetter] = useState(null); // { text, cached }
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState(null);
 
@@ -77,7 +77,7 @@ function AiPanel({ application, onClose, onMatchScored }) {
     setIsGenerating(true);
     setError(null);
     generateCoverLetter(application.id, resumeText, tone)
-      .then((data) => setCoverLetter(data.cover_letter))
+      .then((data) => setCoverLetter({ text: data.cover_letter, cached: data.cached }))
       .catch((err) => setError(err.message))
       .finally(() => setIsGenerating(false));
   }
@@ -164,6 +164,7 @@ function AiPanel({ application, onClose, onMatchScored }) {
           >
             <div className={`score-meter-fill score-${scoreBand(match.score)}`} style={{ width: `${match.score}%` }} />
           </div>
+          {match.cached && <p className="ai-hint">Same inputs as before — served from cache, no new API call.</p>}
           {match.summary && <p className="match-summary">{match.summary}</p>}
           <KeywordList title="Matched" keywords={match.matched_keywords} variant="matched" />
           <KeywordList title="Missing" keywords={match.missing_keywords} variant="missing" />
@@ -174,11 +175,12 @@ function AiPanel({ application, onClose, onMatchScored }) {
         <div className="ai-result">
           <div className="ai-result-header">
             <h3>Cover letter draft</h3>
-            <button type="button" className="button-secondary" onClick={() => navigator.clipboard?.writeText(coverLetter)}>
+            <button type="button" className="button-secondary" onClick={() => navigator.clipboard?.writeText(coverLetter.text)}>
               Copy
             </button>
           </div>
-          <p className="cover-letter">{coverLetter}</p>
+          {coverLetter.cached && <p className="ai-hint">Same inputs as before — served from cache, no new API call.</p>}
+          <p className="cover-letter">{coverLetter.text}</p>
         </div>
       )}
     </section>

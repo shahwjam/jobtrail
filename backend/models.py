@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from sqlalchemy import JSON, Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -40,3 +42,21 @@ class MatchScore(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     application = relationship("Application", back_populates="match")
+
+
+# Cache of Claude replies, keyed by a hash of the full request (see ai_cache.py).
+# Also doubles as a log of paid API calls for the daily usage cap.
+class AIResponse(Base):
+    __tablename__ = "ai_responses"
+
+    id = Column(Integer, primary_key=True, index=True)
+    cache_key = Column(String(64), unique=True, nullable=False, index=True)  # sha256 hex
+    template_name = Column(String(100), nullable=False)
+    template_version = Column(Integer, nullable=False)
+    model = Column(String(100), nullable=False)
+    response = Column(Text, nullable=False)
+    # Set in Python (UTC) rather than by the DB, so the TTL and daily-cap
+    # comparisons behave the same on Postgres and on SQLite in tests.
+    created_at = Column(
+        DateTime(timezone=True), nullable=False, index=True, default=lambda: datetime.now(timezone.utc)
+    )

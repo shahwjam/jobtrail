@@ -1,19 +1,28 @@
 import json
 import re
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
 import models
 import prompts
 import schemas
+from ai_cache import cached_complete
 from ai_client import AIClient, get_ai_client
 from database import get_db
+from rate_limit import SlidingWindowRateLimiter, get_rate_limiter
 
 # All AI endpoints hang off an application: the job description lives on
 # the application row, so the client only sends what we don't already have.
 router = APIRouter(prefix="/applications/{application_id}", tags=["ai"])
+
+
+def client_key(request: Request) -> str:
+    # Per-IP limiting. Behind a cloud load balancer, uvicorn's
+    # --proxy-headers flag (see the Dockerfile) makes this the real client
+    # IP from X-Forwarded-For rather than the proxy's address.
+    return request.client.host if request.client else "unknown"
 
 
 def get_application_or_404(application_id: int, db: Session) -> models.Application:
@@ -31,8 +40,10 @@ def get_application_or_404(application_id: int, db: Session) -> models.Applicati
 def generate_cover_letter(
     application_id: int,
     request: schemas.CoverLetterRequest,
+    http_request: Request,
     db: Session = Depends(get_db),
     ai: AIClient = Depends(get_ai_client),
+    limiter: SlidingWindowRateLimiter = Depends(get_rate_limiter),
 ):
     application = get_application_or_404(application_id, db)
 
@@ -45,7 +56,8 @@ def generate_cover_letter(
         tone=prompts.COVER_LETTER_TONES[request.tone.value],
     )
 
-    return schemas.CoverLetterResponse(application_id=application.id, cover_letter=ai.complete(template.system, prompt))
+    reply, cached = cached_complete(db, ai, limiter, client_key(http_request), template, prompt)
+    return schemas.CoverLetterResponse(application_id=application.id, cover_letter=reply, cached=cached)
 
 
 
@@ -70,8 +82,10 @@ def parse_match_result(reply: str) -> schemas.MatchResult:
 def score_resume_match(
     application_id: int,
     request: schemas.MatchScoreRequest,
+    http_request: Request,
     db: Session = Depends(get_db),
     ai: AIClient = Depends(get_ai_client),
+    limiter: SlidingWindowRateLimiter = Depends(get_rate_limiter),
 ):
     application = get_application_or_404(application_id, db)
 
@@ -82,7 +96,8 @@ def score_resume_match(
         job_description=application.job_description,
         resume=request.resume_text,
     )
-    result = parse_match_result(ai.complete(template.system, prompt))
+    reply, cached = cached_complete(db, ai, limiter, client_key(http_request), template, prompt)
+    result = parse_match_result(reply)
 
     # Upsert: one stored score per application, overwritten on each re-run.
     if application.match is None:
@@ -93,7 +108,8 @@ def score_resume_match(
 
     db.commit()
     db.refresh(application.match)
-    return application.match
+    response = schemas.MatchScoreResponse.model_validate(application.match)
+    return response.model_copy(update={"cached": cached})
 
 
 @router.get("/match-score", response_model=schemas.MatchScoreResponse)

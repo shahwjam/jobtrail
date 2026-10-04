@@ -19,7 +19,7 @@ def test_cover_letter_generated(client, fake_ai):
     response = client.post(f"/applications/{application['id']}/cover-letter", json={"resume_text": RESUME})
 
     assert response.status_code == 200
-    assert response.json() == {"application_id": application["id"], "cover_letter": fake_ai.reply}
+    assert response.json() == {"application_id": application["id"], "cover_letter": fake_ai.reply, "cached": False}
     # The prompt Claude saw includes the job and the resume
     prompt = fake_ai.calls[0]["prompt"]
     assert "Acme Corp" in prompt and "FastAPI" in prompt and RESUME.strip() in prompt
