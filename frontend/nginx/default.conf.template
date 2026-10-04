@@ -1,0 +1,27 @@
+# Served by the nginx stage of frontend/Dockerfile. The official nginx
+# image runs envsubst on /etc/nginx/templates/*.template at startup, so
+# ${PORT} becomes the real port (80 locally, whatever the host assigns in the cloud).
+server {
+    listen ${PORT};
+    server_name _;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # Vite fingerprints asset filenames (index-BP1ZJ_Kv.js), so a changed
+    # file always gets a new name — safe to cache for a year.
+    location /assets/ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        try_files $uri =404;
+    }
+
+    # index.html must never be cached, or users keep loading old bundles
+    # after a deploy. Unknown paths fall back to it so client-side routes work.
+    location / {
+        add_header Cache-Control "no-cache";
+        try_files $uri $uri/ /index.html;
+    }
+
+    gzip on;
+    gzip_types text/css application/javascript application/json image/svg+xml;
+}
