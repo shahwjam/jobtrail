@@ -51,3 +51,14 @@ export async function updateApplication(id, application) {
 export async function generateCoverLetter(id, resumeText, tone) {
   return postJson(`/applications/${id}/cover-letter`, { resume_text: resumeText, tone });
 }
+
+export async function scoreResumeMatch(id, resumeText) {
+  return postJson(`/applications/${id}/match-score`, { resume_text: resumeText });
+}
+
+// Resolves to null (not an error) when no score has been run yet.
+export async function getResumeMatch(id) {
+  const response = await fetch(`${API_BASE_URL}/applications/${id}/match-score`);
+  if (response.status === 404) return null;
+  return handleResponse(response);
+}

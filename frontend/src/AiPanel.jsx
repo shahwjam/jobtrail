@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { generateCoverLetter } from "./api";
+import { useEffect, useState } from "react";
+import { generateCoverLetter, getResumeMatch, scoreResumeMatch } from "./api";
+import { scoreBand } from "./score";
 
 const RESUME_STORAGE_KEY = "jobtrail.resume";
 
@@ -29,14 +30,40 @@ function saveResume(text) {
   }
 }
 
+function KeywordList({ title, keywords, variant }) {
+  if (keywords.length === 0) return null;
+  return (
+    <div className="keyword-group">
+      <h4>{title}</h4>
+      <ul className="keyword-list">
+        {keywords.map((keyword) => (
+          <li key={keyword} className={`keyword keyword-${variant}`}>
+            {keyword}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 // AI tools for one application: paste your resume once, then generate a
-// tailored cover letter from the application's job description.
-function AiPanel({ application, onClose }) {
+// tailored cover letter or a keyword match score from the job description.
+function AiPanel({ application, onClose, onMatchScored }) {
   const [resumeText, setResumeText] = useState(loadSavedResume);
   const [tone, setTone] = useState("professional");
   const [coverLetter, setCoverLetter] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState(null);
+
+  const [match, setMatch] = useState(null);
+  const [isScoring, setIsScoring] = useState(false);
+
+  // Show the last saved score (if any) as soon as the panel opens.
+  useEffect(() => {
+    getResumeMatch(application.id)
+      .then(setMatch)
+      .catch(() => {}); // no saved score is fine — the user can run one
+  }, [application.id]);
 
   const hasJobDescription = Boolean(application.job_description);
   const resumeTooShort = resumeText.trim().length < 50;
@@ -54,6 +81,21 @@ function AiPanel({ application, onClose }) {
       .catch((err) => setError(err.message))
       .finally(() => setIsGenerating(false));
   }
+
+  function handleScore() {
+    setIsScoring(true);
+    setError(null);
+    scoreResumeMatch(application.id, resumeText)
+      .then((data) => {
+        setMatch(data);
+        onMatchScored(application.id, data.score);
+      })
+      .catch((err) => setError(err.message))
+      .finally(() => setIsScoring(false));
+  }
+
+  const isBusy = isGenerating || isScoring;
+  const cannotRun = !hasJobDescription || resumeTooShort;
 
   return (
     <section className="ai-panel" aria-label={`AI tools for ${application.company}`}>
@@ -91,15 +133,40 @@ function AiPanel({ application, onClose }) {
           type="button"
           className="button-primary"
           onClick={handleGenerate}
-          disabled={isGenerating || !hasJobDescription || resumeTooShort}
+          disabled={isBusy || cannotRun}
         >
           {isGenerating ? "Writing…" : "Generate cover letter"}
+        </button>
+        <button type="button" className="button-primary" onClick={handleScore} disabled={isBusy || cannotRun}>
+          {isScoring ? "Scoring…" : "Score resume match"}
         </button>
       </div>
 
       {error && (
         <div className="error-banner">
           <p>{error}</p>
+        </div>
+      )}
+
+      {match && (
+        <div className="ai-result">
+          <div className="ai-result-header">
+            <h3>Resume match</h3>
+            <span className={`score-badge score-${scoreBand(match.score)}`}>{match.score}/100</span>
+          </div>
+          <div
+            className="score-meter"
+            role="meter"
+            aria-label="Resume match score"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={match.score}
+          >
+            <div className={`score-meter-fill score-${scoreBand(match.score)}`} style={{ width: `${match.score}%` }} />
+          </div>
+          {match.summary && <p className="match-summary">{match.summary}</p>}
+          <KeywordList title="Matched" keywords={match.matched_keywords} variant="matched" />
+          <KeywordList title="Missing" keywords={match.missing_keywords} variant="missing" />
         </div>
       )}
 

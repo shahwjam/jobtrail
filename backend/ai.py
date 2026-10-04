@@ -1,4 +1,8 @@
+import json
+import re
+
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
 import models
@@ -42,3 +46,59 @@ def generate_cover_letter(
     )
 
     return schemas.CoverLetterResponse(application_id=application.id, cover_letter=ai.complete(template.system, prompt))
+
+
+
+def parse_match_result(reply: str) -> schemas.MatchResult:
+    """Turn Claude's reply into a validated MatchResult.
+
+    We ask for bare JSON, but models sometimes wrap it in a ```json fence
+    or add a sentence before it. Grab the outermost {...} and validate it;
+    anything still unusable is a 502 (the upstream service misbehaved),
+    not a crash and not a made-up score.
+    """
+    match = re.search(r"\{.*\}", reply, re.DOTALL)
+    if match is None:
+        raise HTTPException(status_code=502, detail="AI returned an unreadable match score")
+    try:
+        return schemas.MatchResult.model_validate(json.loads(match.group()))
+    except (json.JSONDecodeError, ValidationError):
+        raise HTTPException(status_code=502, detail="AI returned an unreadable match score")
+
+
+@router.post("/match-score", response_model=schemas.MatchScoreResponse)
+def score_resume_match(
+    application_id: int,
+    request: schemas.MatchScoreRequest,
+    db: Session = Depends(get_db),
+    ai: AIClient = Depends(get_ai_client),
+):
+    application = get_application_or_404(application_id, db)
+
+    template = prompts.RESUME_MATCH
+    prompt = template.render(
+        company=application.company,
+        position=application.position,
+        job_description=application.job_description,
+        resume=request.resume_text,
+    )
+    result = parse_match_result(ai.complete(template.system, prompt))
+
+    # Upsert: one stored score per application, overwritten on each re-run.
+    if application.match is None:
+        application.match = models.MatchScore(application_id=application.id, **result.model_dump())
+    else:
+        for field, value in result.model_dump().items():
+            setattr(application.match, field, value)
+
+    db.commit()
+    db.refresh(application.match)
+    return application.match
+
+
+@router.get("/match-score", response_model=schemas.MatchScoreResponse)
+def get_resume_match(application_id: int, db: Session = Depends(get_db)):
+    score = db.query(models.MatchScore).filter(models.MatchScore.application_id == application_id).first()
+    if score is None:
+        raise HTTPException(status_code=404, detail="No match score yet for this application")
+    return score

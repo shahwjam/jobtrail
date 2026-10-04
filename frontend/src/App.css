@@ -319,3 +319,68 @@
   font-family: inherit;
   background: #fff;
 }
+
+/* Company name + match score badge on each card */
+.card-title {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.score-badge {
+  flex-shrink: 0;
+  border-radius: 999px;
+  padding: 0.1rem 0.55rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.score-badge.score-high { background: #dcfce7; color: #15803d; }
+.score-badge.score-medium { background: #fef3c7; color: #b45309; }
+.score-badge.score-low { background: #fee2e2; color: #b91c1c; }
+
+.score-meter {
+  height: 8px;
+  border-radius: 999px;
+  background: #e5e7eb;
+  overflow: hidden;
+  margin: 0.6rem 0;
+}
+
+.score-meter-fill { height: 100%; border-radius: 999px; }
+.score-meter-fill.score-high { background: #16a34a; }
+.score-meter-fill.score-medium { background: #d97706; }
+.score-meter-fill.score-low { background: #dc2626; }
+
+.match-summary {
+  color: #1f2937;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.keyword-group h4 {
+  margin: 0.6rem 0 0.35rem;
+  font-size: 0.8rem;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.keyword-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.keyword {
+  border-radius: 6px;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.8rem;
+}
+
+.keyword-matched { background: #eef2ff; color: #3730a3; }
+.keyword-missing { background: #fff; color: #4b5563; border: 1px dashed #d1d5db; }
