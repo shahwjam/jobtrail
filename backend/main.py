@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 import ai
 import config
@@ -49,7 +49,9 @@ def create_application(application: schemas.ApplicationCreate, db: Session = Dep
 
 @app.get("/applications", response_model=list[schemas.ApplicationResponse])
 def get_applications(db: Session = Depends(get_db)):
-    return db.query(models.Application).all()
+    # selectinload fetches every match score in one extra query, instead of
+    # one query per application when the response reads .match_score.
+    return db.query(models.Application).options(selectinload(models.Application.match)).all()
 
 
 @app.patch("/applications/{application_id}", response_model=schemas.ApplicationResponse)

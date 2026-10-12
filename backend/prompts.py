@@ -72,3 +72,32 @@ Requirements:
 - Do not invent employers, titles, numbers, or skills that are not in the resume.
 - Output only the letter text, with no preamble or notes.""",
 )
+
+
+RESUME_MATCH = PromptTemplate(
+    name="resume_match",
+    version=1,
+    system=(
+        "You are a technical recruiter who screens resumes against job descriptions the way an "
+        "applicant tracking system does, but with judgment: synonyms and clearly equivalent "
+        "skills count as matches (e.g. 'Postgres' matches 'PostgreSQL'). You reply with JSON only. "
+        + _DATA_RULE
+    ),
+    user="""Score how well this resume matches the job description for the $position role at $company.
+
+<job_description>
+$job_description
+</job_description>
+
+<resume>
+$resume
+</resume>
+
+Steps:
+1. Extract the 10-20 most important keywords from the job description: hard skills, tools, languages, frameworks, certifications, and domain terms. Skip generic soft-skill filler.
+2. Decide which of those keywords the resume demonstrates.
+3. Score 0-100, weighting required qualifications more heavily than nice-to-haves.
+
+Reply with exactly one JSON object and nothing else, in this shape:
+{"score": 72, "matched_keywords": ["Python", "FastAPI"], "missing_keywords": ["Kubernetes"], "summary": "One or two sentences on the biggest strengths and gaps."}""",
+)

@@ -2,13 +2,21 @@ import { useEffect, useState } from "react";
 import { createApplication, getApplications, updateApplication } from "./api";
 import AiPanel from "./AiPanel";
 import ApplicationForm from "./ApplicationForm";
+import { scoreBand } from "./score";
 import "./App.css";
 
 
 function ApplicationCard({ application, onEdit, onOpenAi }) {
   return (
     <div className="card">
-      <h3>{application.company}</h3>
+      <div className="card-title">
+        <h3>{application.company}</h3>
+        {application.match_score != null && (
+          <span className={`score-badge score-${scoreBand(application.match_score)}`} title="Resume match score">
+            {application.match_score}
+          </span>
+        )}
+      </div>
       <p>{application.position}</p>
       <div className="card-actions">
         <button type="button" className="card-edit" onClick={() => onEdit(application)}>
@@ -107,6 +115,15 @@ function App() {
       .catch((error) => setActionError(error.message));
   }
 
+  // Keeps the badge on the card in sync after a new score, without refetching.
+  function handleMatchScored(applicationId, score) {
+    setApplications((previous) =>
+      previous.map((application) =>
+        application.id === applicationId ? { ...application, match_score: score } : application
+      )
+    );
+  }
+
   const groupedApplications = groupByStatus(applications);
 
   return (
@@ -141,7 +158,14 @@ function App() {
         />
       )}
 
-      {aiTarget && <AiPanel key={aiTarget.id} application={aiTarget} onClose={() => setAiTargetId(null)} />}
+      {aiTarget && (
+        <AiPanel
+          key={aiTarget.id}
+          application={aiTarget}
+          onClose={() => setAiTargetId(null)}
+          onMatchScored={handleMatchScored}
+        />
+      )}
 
       {isLoading && <p className="status-message">Loading applications…</p>}
 

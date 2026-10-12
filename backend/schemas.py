@@ -38,6 +38,7 @@ class ApplicationResponse(BaseModel):
     status: ApplicationStatus
     job_description: str | None
     created_at: datetime
+    match_score: int | None = None
 
 
 # === AI features ===
@@ -59,3 +60,23 @@ class CoverLetterRequest(BaseModel):
 class CoverLetterResponse(BaseModel):
     application_id: int
     cover_letter: str
+
+
+class MatchScoreRequest(BaseModel):
+    resume_text: str = Field(min_length=50, max_length=20000)
+
+
+# Also used to validate Claude's JSON reply before it's saved — a model
+# that answers "score": 140 or forgets a field is caught here, not in the UI.
+class MatchResult(BaseModel):
+    score: int = Field(ge=0, le=100)
+    matched_keywords: list[str] = Field(default_factory=list)
+    missing_keywords: list[str] = Field(default_factory=list)
+    summary: str | None = None
+
+
+class MatchScoreResponse(MatchResult):
+    model_config = ConfigDict(from_attributes=True)
+
+    application_id: int
+    updated_at: datetime | None = None
