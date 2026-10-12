@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 import models
+import prompts
 import schemas
 from ai_client import AIClient, get_ai_client
 from database import get_db
@@ -31,12 +32,13 @@ def generate_cover_letter(
 ):
     application = get_application_or_404(application_id, db)
 
-    system = "You are a career coach who writes concise, specific cover letters."
-    prompt = (
-        f"Write a cover letter for the {application.position} role at {application.company}.\n\n"
-        f"Job description:\n{application.job_description}\n\n"
-        f"Candidate resume:\n{request.resume_text}\n\n"
-        "Keep it under 350 words. Only claim experience that appears in the resume."
+    template = prompts.COVER_LETTER
+    prompt = template.render(
+        company=application.company,
+        position=application.position,
+        job_description=application.job_description,
+        resume=request.resume_text,
+        tone=prompts.COVER_LETTER_TONES[request.tone.value],
     )
 
-    return schemas.CoverLetterResponse(application_id=application.id, cover_letter=ai.complete(system, prompt))
+    return schemas.CoverLetterResponse(application_id=application.id, cover_letter=ai.complete(template.system, prompt))

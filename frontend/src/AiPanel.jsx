@@ -3,6 +3,13 @@ import { generateCoverLetter } from "./api";
 
 const RESUME_STORAGE_KEY = "jobtrail.resume";
 
+// Must match the tone presets in backend/prompts.py
+const TONES = [
+  { value: "professional", label: "Professional" },
+  { value: "enthusiastic", label: "Enthusiastic" },
+  { value: "concise", label: "Concise" },
+];
+
 // The resume is remembered in this browser only, as a convenience so you
 // don't re-paste it for every application. Storage can be blocked (private
 // windows), so every access is wrapped — the panel works fine without it.
@@ -26,6 +33,7 @@ function saveResume(text) {
 // tailored cover letter from the application's job description.
 function AiPanel({ application, onClose }) {
   const [resumeText, setResumeText] = useState(loadSavedResume);
+  const [tone, setTone] = useState("professional");
   const [coverLetter, setCoverLetter] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState(null);
@@ -41,7 +49,7 @@ function AiPanel({ application, onClose }) {
   function handleGenerate() {
     setIsGenerating(true);
     setError(null);
-    generateCoverLetter(application.id, resumeText)
+    generateCoverLetter(application.id, resumeText, tone)
       .then((data) => setCoverLetter(data.cover_letter))
       .catch((err) => setError(err.message))
       .finally(() => setIsGenerating(false));
@@ -72,6 +80,13 @@ function AiPanel({ application, onClose }) {
       </div>
 
       <div className="form-actions">
+        <select aria-label="Cover letter tone" className="ai-tone" value={tone} onChange={(event) => setTone(event.target.value)}>
+          {TONES.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
         <button
           type="button"
           className="button-primary"

@@ -42,3 +42,28 @@ def test_cover_letter_resume_too_short(client):
     application = make_application(client)
     response = client.post(f"/applications/{application['id']}/cover-letter", json={"resume_text": "hi"})
     assert response.status_code == 422
+
+
+# === TASK-017: prompt templates ===
+
+def test_cover_letter_uses_template_and_tone(client, fake_ai):
+    application = make_application(client)
+
+    client.post(
+        f"/applications/{application['id']}/cover-letter",
+        json={"resume_text": RESUME, "tone": "concise"},
+    )
+
+    call = fake_ai.calls[0]
+    assert "untrusted data" in call["system"]
+    assert "<resume>" in call["prompt"]
+    assert "three short paragraphs" in call["prompt"]
+
+
+def test_cover_letter_rejects_unknown_tone(client):
+    application = make_application(client)
+    response = client.post(
+        f"/applications/{application['id']}/cover-letter",
+        json={"resume_text": RESUME, "tone": "pirate"},
+    )
+    assert response.status_code == 422

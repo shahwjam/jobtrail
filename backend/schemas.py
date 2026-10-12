@@ -44,8 +44,16 @@ class ApplicationResponse(BaseModel):
 
 # The resume is sent with each AI request rather than stored — users may
 # keep several resume versions and we don't need to hold that data.
+# Keys must match prompts.COVER_LETTER_TONES
+class CoverLetterTone(str, Enum):
+    professional = "professional"
+    enthusiastic = "enthusiastic"
+    concise = "concise"
+
+
 class CoverLetterRequest(BaseModel):
     resume_text: str = Field(min_length=50, max_length=20000)
+    tone: CoverLetterTone = CoverLetterTone.professional
 
 
 class CoverLetterResponse(BaseModel):
