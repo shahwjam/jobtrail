@@ -1,11 +1,14 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
-# Connection string: dialect+driver://user@host/dbname
-# On a default Mac Homebrew install, your Mac username is the DB user, no password.
-DATABASE_URL = "postgresql+psycopg2://localhost/jobtrail"
+from config import DATABASE_URL
 
-engine = create_engine(DATABASE_URL)
+# Connection string: dialect+driver://user:password@host/dbname — read from
+# the DATABASE_URL environment variable so the same code runs on your Mac,
+# inside Docker, and in the cloud (see config.py for the local default).
+# pool_pre_ping checks a pooled connection is still alive before using it,
+# which matters on cloud databases that drop idle connections.
+engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 

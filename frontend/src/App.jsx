@@ -1,17 +1,23 @@
 import { useEffect, useState } from "react";
 import { createApplication, getApplications, updateApplication } from "./api";
+import AiPanel from "./AiPanel";
 import ApplicationForm from "./ApplicationForm";
 import "./App.css";
 
 
-function ApplicationCard({ application, onEdit }) {
+function ApplicationCard({ application, onEdit, onOpenAi }) {
   return (
     <div className="card">
       <h3>{application.company}</h3>
       <p>{application.position}</p>
-      <button type="button" className="card-edit" onClick={() => onEdit(application)}>
-        Edit
-      </button>
+      <div className="card-actions">
+        <button type="button" className="card-edit" onClick={() => onEdit(application)}>
+          Edit
+        </button>
+        <button type="button" className="card-edit" onClick={() => onOpenAi(application)}>
+          AI tools
+        </button>
+      </div>
     </div>
   );
 }
@@ -52,6 +58,11 @@ function App() {
   // Controls the form: null hides it, "new" opens it in create mode, and
   // an application object opens it pre-filled in edit mode.
   const [formTarget, setFormTarget] = useState(null);
+
+  // The application whose AI panel is open (stored by id so the panel
+  // always reads the latest version after an edit), or null.
+  const [aiTargetId, setAiTargetId] = useState(null);
+  const aiTarget = applications.find((application) => application.id === aiTargetId);
 
   // Only the .then/.catch/.finally callbacks call setState here — none of
   // it runs synchronously, so this is safe to call directly from an effect.
@@ -121,11 +132,16 @@ function App() {
 
       {formTarget && (
         <ApplicationForm
+          // A new key remounts the form, so switching from editing one
+          // application to another resets its fields instead of keeping stale ones.
+          key={formTarget === "new" ? "new" : formTarget.id}
           initialValues={formTarget === "new" ? undefined : formTarget}
           onSubmit={handleFormSubmit}
           onCancel={() => setFormTarget(null)}
         />
       )}
+
+      {aiTarget && <AiPanel key={aiTarget.id} application={aiTarget} onClose={() => setAiTargetId(null)} />}
 
       {isLoading && <p className="status-message">Loading applications…</p>}
 
@@ -149,7 +165,12 @@ function App() {
                 <span className="pipeline-count">{groupedApplications[status].length}</span>
               </div>
               {groupedApplications[status].map((application) => (
-                <ApplicationCard key={application.id} application={application} onEdit={setFormTarget} />
+                <ApplicationCard
+                  key={application.id}
+                  application={application}
+                  onEdit={setFormTarget}
+                  onOpenAi={(target) => setAiTargetId(target.id)}
+                />
               ))}
             </div>
           ))}

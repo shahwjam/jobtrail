@@ -38,3 +38,16 @@ class ApplicationResponse(BaseModel):
     status: ApplicationStatus
     job_description: str | None
     created_at: datetime
+
+
+# === AI features ===
+
+# The resume is sent with each AI request rather than stored — users may
+# keep several resume versions and we don't need to hold that data.
+class CoverLetterRequest(BaseModel):
+    resume_text: str = Field(min_length=50, max_length=20000)
+
+
+class CoverLetterResponse(BaseModel):
+    application_id: int
+    cover_letter: str
